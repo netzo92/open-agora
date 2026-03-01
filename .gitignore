@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+
+# Node / pnpm
+node_modules/
+.pnpm-store/
+
+# Build outputs
+target/
+dist/
+
+# Anchor local artifacts
+.anchor/
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
