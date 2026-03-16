@@ -12,6 +12,9 @@ dist/
 # Anchor local artifacts
 .anchor/
 
+# Keys / wallets
+.keys/
+
 # Env files
 .env
 .env.*
