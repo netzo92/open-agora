@@ -9,6 +9,14 @@ pub enum JobStatus {
     Cancelled,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+pub enum JobType {
+    /// Fixed-price contract: budget is the total payment
+    Fixed,
+    /// Hourly contract: hourly_rate * max_hours = budget cap
+    Hourly,
+}
+
 /// Per-client monotonic counter to derive unique job PDAs without a global hotspot
 #[account]
 pub struct JobCounter {
@@ -37,6 +45,12 @@ pub struct Job {
     pub deadline: i64,
     /// Maximum budget the client escrowed (lamports)
     pub budget: u64,
+    /// Fixed or Hourly
+    pub job_type: JobType,
+    /// Hourly rate in lamports (0 if Fixed)
+    pub hourly_rate: u64,
+    /// Max hours for hourly jobs (0 if Fixed)
+    pub max_hours: u32,
     /// Lifecycle state
     pub status: JobStatus,
     /// PDA bump
@@ -64,6 +78,9 @@ impl Job {
         + (4 + Self::MAX_URI_LEN)       // metadata_uri
         + 8                             // deadline
         + 8                             // budget
+        + 1                             // job_type enum
+        + 8                             // hourly_rate
+        + 4                             // max_hours
         + 1                             // status enum
         + 1                             // bump
         + 8                             // created_at

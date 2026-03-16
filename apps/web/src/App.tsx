@@ -103,6 +103,9 @@ export default function App() {
   const [jobUri, setJobUri] = useState("ipfs://job/spec");
   const [deadline, setDeadline] = useState(Math.floor(Date.now() / 1000) + 3600);
   const [budget, setBudget] = useState(200000000);
+  const [jobType, setJobType] = useState<"fixed" | "hourly">("fixed");
+  const [hourlyRate, setHourlyRate] = useState(100000000);
+  const [maxHours, setMaxHours] = useState(10);
 
   // Service form fields
   const [svcTitle, setSvcTitle] = useState("");
@@ -531,7 +534,12 @@ export default function App() {
                     </span>
                     <div className="listing-meta">
                       <span className="budget-tag">
-                        {lamportsToSol(job.account.budget)} SOL
+                        {enumKey(job.account.jobType || {}) === "hourly"
+                          ? `${lamportsToSol(job.account.hourlyRate || 0)} SOL/hr`
+                          : `${lamportsToSol(job.account.budget)} SOL`}
+                      </span>
+                      <span className="badge" style={{ fontSize: 10, padding: "1px 6px" }}>
+                        {enumKey(job.account.jobType || {}) === "hourly" ? "Hourly" : "Fixed"}
                       </span>
                       <span>{job.account.bidCount.toString()} bids</span>
                       <span>{shortKey(job.account.client)}</span>
@@ -563,8 +571,26 @@ export default function App() {
 
                 <div className="detail-info">
                   <div className="info-block">
-                    <div className="info-label">Budget</div>
+                    <div className="info-label">
+                      {enumKey(selectedJob.account.jobType || {}) === "hourly" ? "Rate" : "Budget"}
+                    </div>
                     <div className="info-value" style={{ color: "var(--green)" }}>
+                      {enumKey(selectedJob.account.jobType || {}) === "hourly"
+                        ? `${lamportsToSol(selectedJob.account.hourlyRate || 0)} SOL/hr`
+                        : `${lamportsToSol(selectedJob.account.budget)} SOL`}
+                    </div>
+                  </div>
+                  <div className="info-block">
+                    <div className="info-label">Type</div>
+                    <div className="info-value">
+                      {enumKey(selectedJob.account.jobType || {}) === "hourly"
+                        ? `Hourly (max ${selectedJob.account.maxHours || 0}h)`
+                        : "Fixed Price"}
+                    </div>
+                  </div>
+                  <div className="info-block">
+                    <div className="info-label">Budget Cap</div>
+                    <div className="info-value">
                       {lamportsToSol(selectedJob.account.budget)} SOL
                     </div>
                   </div>
@@ -805,13 +831,51 @@ export default function App() {
                   />
                 </label>
                 <label>
-                  Budget (lamports)
-                  <input
-                    type="number"
-                    value={budget}
-                    onChange={(e) => setBudget(Number(e.target.value))}
-                  />
+                  Pricing Type
+                  <div style={{ display: "flex", gap: 4, background: "var(--bg-raised)", padding: 4, borderRadius: "var(--radius-sm)" }}>
+                    <button
+                      className={`btn btn-sm ${jobType === "fixed" ? "btn-primary" : "btn-ghost"}`}
+                      onClick={() => setJobType("fixed")}
+                    >
+                      Fixed Price
+                    </button>
+                    <button
+                      className={`btn btn-sm ${jobType === "hourly" ? "btn-primary" : "btn-ghost"}`}
+                      onClick={() => setJobType("hourly")}
+                    >
+                      Hourly Rate
+                    </button>
+                  </div>
                 </label>
+                {jobType === "fixed" ? (
+                  <label>
+                    Budget (lamports)
+                    <input
+                      type="number"
+                      value={budget}
+                      onChange={(e) => setBudget(Number(e.target.value))}
+                    />
+                  </label>
+                ) : (
+                  <>
+                    <label>
+                      Hourly Rate (lamports)
+                      <input
+                        type="number"
+                        value={hourlyRate}
+                        onChange={(e) => setHourlyRate(Number(e.target.value))}
+                      />
+                    </label>
+                    <label>
+                      Max Hours
+                      <input
+                        type="number"
+                        value={maxHours}
+                        onChange={(e) => setMaxHours(Number(e.target.value))}
+                      />
+                    </label>
+                  </>
+                )}
                 <label className="full">
                   Description
                   <textarea
@@ -849,13 +913,21 @@ export default function App() {
                         toU64Le(nextJobId),
                       ]);
 
+                      const finalBudget =
+                        jobType === "hourly" ? hourlyRate * maxHours : budget;
+                      const jobTypeArg =
+                        jobType === "fixed" ? { fixed: {} } : { hourly: {} };
+
                       const sig = await program!.methods
                         .createJob(
                           jobTitle,
                           jobDescription,
                           jobUri,
                           new BN(deadline),
-                          new BN(budget),
+                          new BN(finalBudget),
+                          jobTypeArg,
+                          new BN(jobType === "hourly" ? hourlyRate : 0),
+                          jobType === "hourly" ? maxHours : 0,
                         )
                         .accounts({
                           client: walletPk!,
@@ -994,13 +1066,10 @@ export default function App() {
         <section className="ops-layout">
           <div className="card">
             <div className="card-header">
-              <h2>Account Setup</h2>
-              <span className="count">one-time</span>
+              <h2>Agent Profile</h2>
+              <span className="count">one-time setup</span>
             </div>
             <div>
-              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
-                Register Agent Profile
-              </h3>
               <div style={{ display: "grid", gap: 12 }}>
                 <label>
                   Agent Name

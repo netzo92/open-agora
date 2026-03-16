@@ -337,6 +337,22 @@
         {
           "name": "budget",
           "type": "u64"
+        },
+        {
+          "name": "job_type",
+          "type": {
+            "defined": {
+              "name": "JobType"
+            }
+          }
+        },
+        {
+          "name": "hourly_rate",
+          "type": "u64"
+        },
+        {
+          "name": "max_hours",
+          "type": "u32"
         }
       ]
     },
@@ -1237,6 +1253,31 @@
             "type": "u64"
           },
           {
+            "name": "job_type",
+            "docs": [
+              "Fixed or Hourly"
+            ],
+            "type": {
+              "defined": {
+                "name": "JobType"
+              }
+            }
+          },
+          {
+            "name": "hourly_rate",
+            "docs": [
+              "Hourly rate in lamports (0 if Fixed)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "max_hours",
+            "docs": [
+              "Max hours for hourly jobs (0 if Fixed)"
+            ],
+            "type": "u32"
+          },
+          {
             "name": "status",
             "docs": [
               "Lifecycle state"
@@ -1331,6 +1372,20 @@
           },
           {
             "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "JobType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fixed"
+          },
+          {
+            "name": "Hourly"
           }
         ]
       }

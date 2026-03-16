@@ -68,6 +68,9 @@ pub mod open_agora {
         metadata_uri: String,
         deadline: i64,
         budget: u64,
+        job_type: JobType,
+        hourly_rate: u64,
+        max_hours: u32,
     ) -> Result<()> {
         require!(title.len() <= Job::MAX_TITLE_LEN, AgoraError::TitleTooLong);
         require!(
@@ -79,6 +82,11 @@ pub mod open_agora {
             AgoraError::UriTooLong
         );
         require!(budget > 0, AgoraError::BudgetZero);
+
+        if job_type == JobType::Hourly {
+            require!(hourly_rate > 0, AgoraError::InvalidRate);
+            require!(max_hours > 0, AgoraError::InvalidRate);
+        }
 
         let now = Clock::get()?.unix_timestamp;
         if deadline != 0 {
@@ -96,6 +104,9 @@ pub mod open_agora {
         job.metadata_uri = metadata_uri;
         job.deadline = deadline;
         job.budget = budget;
+        job.job_type = job_type;
+        job.hourly_rate = hourly_rate;
+        job.max_hours = max_hours;
         job.status = JobStatus::Open;
         job.bump = ctx.bumps.job;
         job.created_at = now;
