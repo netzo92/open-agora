@@ -305,8 +305,9 @@
                 "path": "client"
               },
               {
-                "kind": "arg",
-                "path": "job_id"
+                "kind": "account",
+                "path": "job_counter.count",
+                "account": "JobCounter"
               }
             ]
           }
@@ -317,10 +318,6 @@
         }
       ],
       "args": [
-        {
-          "name": "job_id",
-          "type": "u64"
-        },
         {
           "name": "title",
           "type": "string"
@@ -339,6 +336,119 @@
         },
         {
           "name": "budget",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_service_listing",
+      "discriminator": [
+        91,
+        37,
+        216,
+        26,
+        93,
+        146,
+        13,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "agent",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "service_counter",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  114,
+                  118,
+                  105,
+                  99,
+                  101,
+                  95,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agent"
+              }
+            ]
+          }
+        },
+        {
+          "name": "service_listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  114,
+                  118,
+                  105,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agent"
+              },
+              {
+                "kind": "account",
+                "path": "service_counter.count",
+                "account": "ServiceCounter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "metadata_uri",
+          "type": "string"
+        },
+        {
+          "name": "skills",
+          "type": {
+            "vec": "string"
+          }
+        },
+        {
+          "name": "hourly_rate",
+          "type": "u64"
+        },
+        {
+          "name": "min_budget",
           "type": "u64"
         }
       ]
@@ -445,6 +555,63 @@
               {
                 "kind": "account",
                 "path": "client"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_service_counter",
+      "discriminator": [
+        230,
+        89,
+        240,
+        138,
+        32,
+        39,
+        190,
+        72
+      ],
+      "accounts": [
+        {
+          "name": "agent",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "service_counter",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  114,
+                  118,
+                  105,
+                  99,
+                  101,
+                  95,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "agent"
               }
             ]
           }
@@ -572,6 +739,31 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "toggle_service_listing",
+      "discriminator": [
+        157,
+        61,
+        152,
+        189,
+        6,
+        198,
+        22,
+        208
+      ],
+      "accounts": [
+        {
+          "name": "agent",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "service_listing",
+          "writable": true
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -638,6 +830,32 @@
         53,
         195,
         39
+      ]
+    },
+    {
+      "name": "ServiceCounter",
+      "discriminator": [
+        61,
+        209,
+        160,
+        114,
+        61,
+        231,
+        122,
+        228
+      ]
+    },
+    {
+      "name": "ServiceListing",
+      "discriminator": [
+        117,
+        173,
+        54,
+        52,
+        146,
+        147,
+        124,
+        211
       ]
     }
   ],
@@ -744,13 +962,18 @@
     },
     {
       "code": 6020,
-      "name": "JobIdMismatch",
-      "msg": "Provided job id does not match counter"
+      "name": "ArithmeticOverflow",
+      "msg": "Math overflow"
     },
     {
       "code": 6021,
-      "name": "ArithmeticOverflow",
-      "msg": "Math overflow"
+      "name": "ServiceNotActive",
+      "msg": "Service listing is not active"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidRate",
+      "msg": "Hourly rate must be non-negative"
     }
   ],
   "types": [
@@ -1108,6 +1331,113 @@
           },
           {
             "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ServiceCounter",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "count",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ServiceListing",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "agent",
+            "docs": [
+              "Agent who posted this service"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "listing_id",
+            "docs": [
+              "Monotonically-increasing ID scoped to this agent"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "title",
+            "docs": [
+              "Service title (max 128 chars)"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "docs": [
+              "Full description of the service (max 2048 chars)"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "docs": [
+              "IPFS CID or link to structured specs"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "skills",
+            "docs": [
+              "Skill tags relevant to this service"
+            ],
+            "type": {
+              "vec": "string"
+            }
+          },
+          {
+            "name": "hourly_rate",
+            "docs": [
+              "Hourly rate in lamports (0 = negotiable)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "min_budget",
+            "docs": [
+              "Minimum budget in lamports (0 = no minimum)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "is_active",
+            "docs": [
+              "Whether the listing is currently active"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Unix timestamp of creation"
+            ],
+            "type": "i64"
           }
         ]
       }

@@ -64,6 +64,18 @@ anchor test
 pnpm web:dev
 ```
 
+Demo market seeding (for UI preview):
+
+```bash
+solana-test-validator -r
+# in another terminal
+anchor build
+pnpm seed:market
+pnpm web:dev
+```
+
+Then open `http://localhost:5173`, connect Phantom (localhost network), and click `Sync Index`.
+
 Frontend target cluster is:
 
 - `http://127.0.0.1:8899`

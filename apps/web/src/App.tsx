@@ -17,24 +17,17 @@ type PhantomProvider = {
   signAllTransactions: (txs: Transaction[]) => Promise<Transaction[]>;
 };
 
-type JobRecord = {
-  publicKey: PublicKey;
-  account: any;
-};
+type JobRecord = { publicKey: PublicKey; account: any };
+type BidRecord = { publicKey: PublicKey; account: any };
+type ServiceRecord = { publicKey: PublicKey; account: any };
+type AgentRecord = { publicKey: PublicKey; account: any };
 
-type BidRecord = {
-  publicKey: PublicKey;
-  account: any;
-};
-
-type View = "market" | "post" | "ops";
+type View = "jobs" | "services" | "post" | "dashboard";
 
 declare global {
   interface Window {
     solana?: PhantomProvider;
-    phantom?: {
-      solana?: PhantomProvider;
-    };
+    phantom?: { solana?: PhantomProvider };
   }
 }
 
@@ -50,13 +43,12 @@ function toU64Le(value: number): Buffer {
 }
 
 function enumKey(value: any): string {
-  const keys = Object.keys(value || {});
-  return keys[0] || "unknown";
+  return Object.keys(value || {})[0] || "unknown";
 }
 
 function shortKey(value: PublicKey | string): string {
   const s = typeof value === "string" ? value : value.toBase58();
-  return `${s.slice(0, 6)}...${s.slice(-6)}`;
+  return `${s.slice(0, 4)}...${s.slice(-4)}`;
 }
 
 function lamportsToSol(value: BN | number): string {
@@ -64,107 +56,105 @@ function lamportsToSol(value: BN | number): string {
   return (n / 1_000_000_000).toFixed(2);
 }
 
+function timeAgo(unixTs: number): string {
+  const diff = Math.floor(Date.now() / 1000) - unixTs;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 function getPhantomProvider(): PhantomProvider | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
+  if (typeof window === "undefined") return null;
   const provider = window.phantom?.solana ?? window.solana;
-  if (!provider?.isPhantom) {
-    return null;
-  }
-  return provider;
+  return provider?.isPhantom ? provider : null;
 }
 
 export default function App() {
   const [wallet, setWallet] = useState<PhantomProvider | null>(null);
   const [walletPk, setWalletPk] = useState<PublicKey | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  const [view, setView] = useState<View>("market");
+  const [view, setView] = useState<View>("jobs");
 
+  // Agent profile fields
   const [profileName, setProfileName] = useState("autonomous-agent");
   const [profileUri, setProfileUri] = useState("ipfs://agent/profile");
   const [skills, setSkills] = useState("research,writing,code-review");
 
-  const [jobTitle, setJobTitle] = useState("Create a launch thread");
-  const [jobDescription, setJobDescription] = useState(
-    "Prepare a public launch brief for the Open Agora labor exchange.",
-  );
+  // Job form fields
+  const [jobTitle, setJobTitle] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const [jobUri, setJobUri] = useState("ipfs://job/spec");
   const [deadline, setDeadline] = useState(Math.floor(Date.now() / 1000) + 3600);
   const [budget, setBudget] = useState(200000000);
 
+  // Service form fields
+  const [svcTitle, setSvcTitle] = useState("");
+  const [svcDescription, setSvcDescription] = useState("");
+  const [svcUri, setSvcUri] = useState("ipfs://service/spec");
+  const [svcSkills, setSvcSkills] = useState("research,analysis");
+  const [svcHourlyRate, setSvcHourlyRate] = useState(100000000);
+  const [svcMinBudget, setSvcMinBudget] = useState(50000000);
+
+  // Bid fields
   const [bidAmount, setBidAmount] = useState(150000000);
-  const [proposal, setProposal] = useState(
-    "I can deliver concise copy with strong market positioning.",
-  );
+  const [proposal, setProposal] = useState("");
   const [bidUri, setBidUri] = useState("ipfs://bid/proposal");
   const [deliveryTime, setDeliveryTime] = useState(1800);
 
+  // Market state
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [allBids, setAllBids] = useState<BidRecord[]>([]);
+  const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [agents, setAgents] = useState<AgentRecord[]>([]);
   const [selectedJobKey, setSelectedJobKey] = useState("");
   const [lastPostedJobKey, setLastPostedJobKey] = useState("");
+  const [postMode, setPostMode] = useState<"job" | "service">("job");
 
   const connection = useMemo(() => new Connection(CLUSTER_URL, "confirmed"), []);
 
   const provider = useMemo(() => {
-    if (!wallet) {
-      return null;
-    }
-    return new AnchorProvider(connection, wallet as any, {
-      commitment: "confirmed",
-    });
+    if (!wallet) return null;
+    return new AnchorProvider(connection, wallet as any, { commitment: "confirmed" });
   }, [connection, wallet]);
 
   const program = useMemo(() => {
-    if (!provider) {
-      return null;
-    }
+    if (!provider) return null;
+    // @ts-ignore — Anchor type mismatch between constructor overloads
     return new Program(idlJson as Idl, PROGRAM_ID, provider);
   }, [provider]);
 
   const pdas = useMemo(() => {
-    if (!walletPk) {
-      return null;
-    }
-
-    const jobCounter = findPda([Buffer.from("job_counter"), walletPk.toBuffer()]);
-    const agentProfile = findPda([Buffer.from("agent_profile"), walletPk.toBuffer()]);
-    return { jobCounter, agentProfile };
+    if (!walletPk) return null;
+    return {
+      jobCounter: findPda([Buffer.from("job_counter"), walletPk.toBuffer()]),
+      agentProfile: findPda([Buffer.from("agent_profile"), walletPk.toBuffer()]),
+      serviceCounter: findPda([Buffer.from("service_counter"), walletPk.toBuffer()]),
+    };
   }, [walletPk]);
 
   const ownTargetJob = useMemo(() => {
-    if (lastPostedJobKey) {
-      return new PublicKey(lastPostedJobKey);
-    }
-    if (!walletPk) {
-      return null;
-    }
+    if (lastPostedJobKey) return new PublicKey(lastPostedJobKey);
+    if (!walletPk) return null;
     const own = jobs.find((j) => j.account.client.toBase58() === walletPk.toBase58());
     return own?.publicKey || null;
   }, [lastPostedJobKey, jobs, walletPk]);
 
   const ownTargetEscrow = useMemo(() => {
-    if (!ownTargetJob) {
-      return null;
-    }
+    if (!ownTargetJob) return null;
     return findPda([Buffer.from("escrow"), ownTargetJob.toBuffer()]);
   }, [ownTargetJob]);
 
   const ownTargetBid = useMemo(() => {
-    if (!ownTargetJob) {
-      return null;
-    }
+    if (!ownTargetJob) return null;
     const accepted = allBids.find(
       (b) =>
         b.account.job.toBase58() === ownTargetJob.toBase58() &&
         enumKey(b.account.status) === "accepted",
     );
-    if (accepted) {
-      return accepted.publicKey;
-    }
+    if (accepted) return accepted.publicKey;
     const pending = allBids.find(
       (b) => b.account.job.toBase58() === ownTargetJob.toBase58(),
     );
@@ -177,25 +167,19 @@ export default function App() {
   );
 
   const selectedJobBids = useMemo(() => {
-    if (!selectedJob) {
-      return [];
-    }
+    if (!selectedJob) return [];
     return allBids.filter(
       (x) => x.account.job.toBase58() === selectedJob.publicKey.toBase58(),
     );
   }, [allBids, selectedJob]);
 
   const selectedEscrowPda = useMemo(() => {
-    if (!selectedJob) {
-      return null;
-    }
+    if (!selectedJob) return null;
     return findPda([Buffer.from("escrow"), selectedJob.publicKey.toBuffer()]);
   }, [selectedJob]);
 
   const selectedBidPda = useMemo(() => {
-    if (!selectedJob || !walletPk) {
-      return null;
-    }
+    if (!selectedJob || !walletPk) return null;
     return findPda([
       Buffer.from("bid"),
       selectedJob.publicKey.toBuffer(),
@@ -209,28 +193,27 @@ export default function App() {
       const desc = String(job.account.description || "").toLowerCase();
       const q = search.trim().toLowerCase();
       const status = enumKey(job.account.status);
-
       const textOk = q.length === 0 || title.includes(q) || desc.includes(q);
       const statusOk = statusFilter === "all" || status === statusFilter;
-
       return textOk && statusOk;
     });
   }, [jobs, search, statusFilter]);
 
   const stats = useMemo(() => {
     const openJobs = jobs.filter((j) => enumKey(j.account.status) === "open").length;
-    const totalVolumeLamports = jobs.reduce(
+    const totalVolume = jobs.reduce(
       (sum, j) => sum + Number(j.account.budget?.toString?.() || 0),
       0,
     );
-
     return {
       jobs: jobs.length,
       bids: allBids.length,
       openJobs,
-      volumeSol: (totalVolumeLamports / 1_000_000_000).toFixed(2),
+      services: services.length,
+      agents: agents.length,
+      volumeSol: (totalVolume / 1_000_000_000).toFixed(2),
     };
-  }, [jobs, allBids]);
+  }, [jobs, allBids, services, agents]);
 
   const log = (line: string) => {
     setLogs((prev) => [`${new Date().toLocaleTimeString()}  ${line}`, ...prev]);
@@ -239,8 +222,7 @@ export default function App() {
   const connectWallet = async () => {
     const phantom = getPhantomProvider();
     if (!phantom) {
-      alert("Phantom wallet not found.");
-      log("Phantom provider not detected. Install/enable Phantom extension.");
+      alert("Phantom wallet not found. Please install the Phantom browser extension.");
       return;
     }
     try {
@@ -251,7 +233,15 @@ export default function App() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       log(`Wallet connect failed: ${msg}`);
-      alert(`Phantom connection failed: ${msg}`);
+    }
+  };
+
+  const disconnectWallet = async () => {
+    if (wallet) {
+      await wallet.disconnect();
+      setWallet(null);
+      setWalletPk(null);
+      log("Wallet disconnected");
     }
   };
 
@@ -260,14 +250,13 @@ export default function App() {
       alert("Connect wallet first.");
       return;
     }
-
     try {
-      log(`Running ${name}...`);
+      log(`${name}...`);
       const sig = await fn();
-      log(`${name} success: ${sig}`);
+      log(`${name} OK: ${sig.slice(0, 16)}...`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      log(`${name} failed: ${msg}`);
+      log(`${name} FAILED: ${msg}`);
     }
   };
 
@@ -276,14 +265,20 @@ export default function App() {
       alert("Connect wallet first.");
       return;
     }
-
     try {
-      const [jobsResp, bidsResp] = await Promise.all([
-        program.account.job.all(),
-        program.account.bid.all(),
-      ]);
+      const accounts = program.account as any;
+      const fetches: Promise<any>[] = [
+        accounts.job.all(),
+        accounts.bid.all(),
+      ];
 
-      jobsResp.sort((a, b) => {
+      // Try to fetch services and agents if the accounts exist in the IDL
+      try { fetches.push(accounts.serviceListing.all()); } catch { fetches.push(Promise.resolve([])); }
+      try { fetches.push(accounts.agentProfile.all()); } catch { fetches.push(Promise.resolve([])); }
+
+      const [jobsResp, bidsResp, servicesResp, agentsResp] = await Promise.all(fetches);
+
+      jobsResp.sort((a: any, b: any) => {
         const aTs = Number(a.account.createdAt?.toString?.() || 0);
         const bTs = Number(b.account.createdAt?.toString?.() || 0);
         return bTs - aTs;
@@ -291,278 +286,643 @@ export default function App() {
 
       setJobs(jobsResp as JobRecord[]);
       setAllBids(bidsResp as BidRecord[]);
+      setServices((servicesResp || []) as ServiceRecord[]);
+      setAgents((agentsResp || []) as AgentRecord[]);
 
-      const existingSelected = jobsResp.find(
-        (x) => x.publicKey.toBase58() === selectedJobKey,
-      );
-      if (!existingSelected) {
+      if (!jobsResp.find((x: any) => x.publicKey.toBase58() === selectedJobKey)) {
         setSelectedJobKey(jobsResp[0]?.publicKey.toBase58() || "");
       }
 
-      log(`Market index refreshed: ${jobsResp.length} contracts, ${bidsResp.length} offers`);
+      log(`Synced: ${jobsResp.length} jobs, ${bidsResp.length} bids, ${(servicesResp || []).length} services`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      log(`refresh failed: ${msg}`);
+      log(`Sync failed: ${msg}`);
     }
   };
 
+  const navItems: { key: View; label: string }[] = [
+    { key: "jobs", label: "Browse Jobs" },
+    { key: "services", label: "Services" },
+    { key: "post", label: "Post" },
+    { key: "dashboard", label: "Dashboard" },
+  ];
+
   return (
     <div className="site">
-      <header className="header">
-        <div className="brand-block">
-          <p className="kicker">Open Agora Network</p>
-          <h1>Autonomous Labor Exchange</h1>
-        </div>
-        <nav className="nav-tabs">
-          <button className={view === "market" ? "active" : ""} onClick={() => setView("market")}>Market Board</button>
-          <button className={view === "post" ? "active" : ""} onClick={() => setView("post")}>Issue Contract</button>
-          <button className={view === "ops" ? "active" : ""} onClick={() => setView("ops")}>Control</button>
-        </nav>
-        <div className="header-actions">
-          <button className="secondary" onClick={refreshMarketplace}>Sync Index</button>
-          <button className="primary" onClick={connectWallet}>
-            {walletPk ? `Session ${shortKey(walletPk)}` : "Authorize Phantom"}
-          </button>
-        </div>
-      </header>
+      {/* ─── Top Bar ─── */}
+      <div className="topbar">
+        <div className="topbar-inner">
+          <div className="logo">
+            <div className="logo-icon">OA</div>
+            <span className="logo-text">Open Agora</span>
+            <span className="logo-badge">Devnet</span>
+          </div>
 
-      <section className="stats-grid">
-        <article><span>Total Jobs</span><strong>{stats.jobs}</strong></article>
-        <article><span>Open Jobs</span><strong>{stats.openJobs}</strong></article>
-        <article><span>Total Bids</span><strong>{stats.bids}</strong></article>
-        <article><span>Budget Volume</span><strong>{stats.volumeSol} SOL</strong></article>
+          <nav className="nav">
+            {navItems.map((item) => (
+              <button
+                key={item.key}
+                className={view === item.key ? "active" : ""}
+                onClick={() => setView(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className="topbar-right">
+            <button className="btn btn-sm" onClick={refreshMarketplace}>
+              Sync
+            </button>
+            {walletPk ? (
+              <button className="btn btn-wallet connected" onClick={disconnectWallet}>
+                {shortKey(walletPk)}
+              </button>
+            ) : (
+              <button className="btn btn-wallet" onClick={connectWallet}>
+                Connect Wallet
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile nav */}
+      <div className="nav-mobile">
+        {navItems.map((item) => (
+          <button
+            key={item.key}
+            className={`btn btn-sm ${view === item.key ? "btn-primary" : ""}`}
+            onClick={() => setView(item.key)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ─── Hero ─── */}
+      <section className="hero">
+        <h1>
+          The <em>Decentralized</em> Labor Marketplace
+        </h1>
+        <p className="hero-sub">
+          Post jobs or services. Humans and AI agents bid, deliver, and get paid
+          through on-chain escrow on Solana.
+        </p>
       </section>
 
-      {view === "market" && (
-        <section className="layout-market">
-          <aside className="card feed-card">
-            <div className="card-head">
-              <h2>Contract Board</h2>
-              <span>{filteredJobs.length} listings</span>
+      {/* ─── Stats ─── */}
+      <section className="stats-row">
+        <div className="stat-card">
+          <span className="stat-label">Open Jobs</span>
+          <span className="stat-value">{stats.openJobs}</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-label">Total Bids</span>
+          <span className="stat-value">{stats.bids}</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-label">Services</span>
+          <span className="stat-value">{stats.services}</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-label">Volume</span>
+          <span className="stat-value accent">{stats.volumeSol} SOL</span>
+        </div>
+      </section>
+
+      {/* ─── Agent Integration Banner ─── */}
+      <div className="agent-banner">
+        <div className="agent-banner-text">
+          <h3>Agent-Ready Marketplace</h3>
+          <p>
+            Integrate autonomous agents like MoltBook, AutoGPT, or custom bots.
+            Register an agent profile, post services, and let agents bid on jobs programmatically.
+          </p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setView("dashboard")}>
+          Register Agent
+        </button>
+      </div>
+
+      {/* ─── Browse Jobs ─── */}
+      {view === "jobs" && (
+        <section className="market-layout">
+          <div className="card">
+            <div className="card-header">
+              <h2>Job Board</h2>
+              <span className="count">{filteredJobs.length} listings</span>
             </div>
-            <div className="filters">
+            <div className="search-bar">
               <input
-                placeholder="Search by title or description"
+                placeholder="Search jobs..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="all">All statuses</option>
+                <option value="all">All</option>
                 <option value="open">Open</option>
                 <option value="inProgress">In Progress</option>
-                <option value="workSubmitted">Work Submitted</option>
+                <option value="workSubmitted">Submitted</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
-            <div className="job-list">
+            <div className="listing-feed">
               {filteredJobs.length === 0 && (
-                <p className="muted">No active listings. Use Sync Index to load market state.</p>
+                <div className="empty-state">
+                  <p>No jobs found. Hit Sync to load from chain.</p>
+                </div>
               )}
               {filteredJobs.map((job) => {
                 const key = job.publicKey.toBase58();
                 const active = key === selectedJobKey;
+                const ts = Number(job.account.createdAt?.toString?.() || 0);
                 return (
                   <button
                     key={key}
-                    className={`job-item ${active ? "active" : ""}`}
+                    className={`listing-item ${active ? "active" : ""}`}
                     onClick={() => setSelectedJobKey(key)}
                   >
-                    <div className="job-top">
-                      <h3>{job.account.title}</h3>
-                      <span className={`status status-${enumKey(job.account.status)}`}>
+                    <div className="listing-top">
+                      <span className="listing-title">{job.account.title}</span>
+                      <span className={`badge badge-${enumKey(job.account.status)}`}>
                         {enumKey(job.account.status)}
                       </span>
                     </div>
-                    <p>{String(job.account.description).slice(0, 120)}...</p>
-                    <div className="meta">
-                      <span>{lamportsToSol(job.account.budget)} SOL</span>
+                    <span className="listing-desc">
+                      {String(job.account.description).slice(0, 120)}
+                    </span>
+                    <div className="listing-meta">
+                      <span className="budget-tag">
+                        {lamportsToSol(job.account.budget)} SOL
+                      </span>
                       <span>{job.account.bidCount.toString()} bids</span>
                       <span>{shortKey(job.account.client)}</span>
+                      {ts > 0 && <span>{timeAgo(ts)}</span>}
                     </div>
                   </button>
                 );
               })}
             </div>
-          </aside>
+          </div>
 
-          <section className="card detail-card">
-            {!selectedJob && (
-              <div className="empty">
-                <h2>Select a Contract</h2>
-                <p>Choose a listing from the board to inspect terms and submit an offer.</p>
+          <div className="card detail-panel">
+            {!selectedJob ? (
+              <div className="detail-empty">
+                <div>
+                  <h2>Select a Job</h2>
+                  <p>Choose a listing from the board to view details and place a bid.</p>
+                </div>
               </div>
-            )}
-            {selectedJob && (
+            ) : (
               <>
-                <div className="card-head">
-                  <h2>{selectedJob.account.title}</h2>
-                  <span>{lamportsToSol(selectedJob.account.budget)} SOL</span>
+                <div className="card-header">
+                  <h2 className="detail-title">{selectedJob.account.title}</h2>
+                  <span className={`badge badge-${enumKey(selectedJob.account.status)}`}>
+                    {enumKey(selectedJob.account.status)}
+                  </span>
                 </div>
-                <p className="description">{selectedJob.account.description}</p>
-                <div className="detail-grid">
-                  <article><span>Client</span><strong>{shortKey(selectedJob.account.client)}</strong></article>
-                  <article><span>Status</span><strong>{enumKey(selectedJob.account.status)}</strong></article>
-                  <article><span>Deadline</span><strong>{selectedJob.account.deadline.toString()}</strong></article>
-                  <article><span>Metadata</span><strong>{selectedJob.account.metadataUri || "-"}</strong></article>
-                </div>
+                <p className="detail-desc">{selectedJob.account.description}</p>
 
-                <div className="subcard">
-                  <h3>Submit Offer</h3>
-                  <label>Amount (lamports)</label>
-                  <input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e) => setBidAmount(Number(e.target.value))}
-                  />
-                  <label>Proposal</label>
-                  <textarea value={proposal} onChange={(e) => setProposal(e.target.value)} />
-                  <label>Proposal URI</label>
-                  <input value={bidUri} onChange={(e) => setBidUri(e.target.value)} />
-                  <label>Delivery Time (seconds)</label>
-                  <input
-                    type="number"
-                    value={deliveryTime}
-                    onChange={(e) => setDeliveryTime(Number(e.target.value))}
-                  />
-                  <button
-                    className="primary"
-                    onClick={() => {
-                      if (!selectedEscrowPda || !selectedBidPda) {
-                        alert("Connect wallet and select a job first.");
-                        return;
-                      }
-                      run("placeBid", () =>
-                        program!.methods
-                          .placeBid(
-                            new BN(bidAmount),
-                            proposal,
-                            bidUri,
-                            new BN(deliveryTime),
-                          )
-                          .accounts({
-                            agent: walletPk!,
-                            job: selectedJob.publicKey,
-                            escrow: selectedEscrowPda,
-                            bid: selectedBidPda,
-                            systemProgram: SystemProgram.programId,
-                          })
-                          .rpc(),
-                      ).then(refreshMarketplace);
-                    }}
-                  >
-                    Submit Offer
-                  </button>
-                </div>
-
-                <div className="subcard">
-                  <h3>Active Offers ({selectedJobBids.length})</h3>
-                  {selectedJobBids.length === 0 && <p className="muted">No offers recorded.</p>}
-                  {selectedJobBids.map((bid) => (
-                    <div key={bid.publicKey.toBase58()} className="bid-row">
-                      <span>{shortKey(bid.account.agent)}</span>
-                      <span>{lamportsToSol(bid.account.amount)} SOL</span>
-                      <span>{enumKey(bid.account.status)}</span>
+                <div className="detail-info">
+                  <div className="info-block">
+                    <div className="info-label">Budget</div>
+                    <div className="info-value" style={{ color: "var(--green)" }}>
+                      {lamportsToSol(selectedJob.account.budget)} SOL
                     </div>
-                  ))}
+                  </div>
+                  <div className="info-block">
+                    <div className="info-label">Client</div>
+                    <div className="info-value">{shortKey(selectedJob.account.client)}</div>
+                  </div>
+                  <div className="info-block">
+                    <div className="info-label">Status</div>
+                    <div className="info-value">{enumKey(selectedJob.account.status)}</div>
+                  </div>
+                  <div className="info-block">
+                    <div className="info-label">Deadline</div>
+                    <div className="info-value">
+                      {selectedJob.account.deadline.toString() === "0"
+                        ? "None"
+                        : new Date(
+                            Number(selectedJob.account.deadline.toString()) * 1000,
+                          ).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Place Bid */}
+                <div className="offer-section">
+                  <h3>Place a Bid</h3>
+                  <div className="offer-form">
+                    <div className="row">
+                      <label>
+                        Amount (lamports)
+                        <input
+                          type="number"
+                          value={bidAmount}
+                          onChange={(e) => setBidAmount(Number(e.target.value))}
+                        />
+                      </label>
+                      <label>
+                        Delivery (seconds)
+                        <input
+                          type="number"
+                          value={deliveryTime}
+                          onChange={(e) => setDeliveryTime(Number(e.target.value))}
+                        />
+                      </label>
+                    </div>
+                    <label>
+                      Proposal
+                      <textarea
+                        value={proposal}
+                        onChange={(e) => setProposal(e.target.value)}
+                        placeholder="Describe your approach..."
+                      />
+                    </label>
+                    <label>
+                      Proposal URI
+                      <input value={bidUri} onChange={(e) => setBidUri(e.target.value)} />
+                    </label>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        if (!selectedEscrowPda || !selectedBidPda) {
+                          alert("Connect wallet and select a job first.");
+                          return;
+                        }
+                        run("placeBid", () =>
+                          program!.methods
+                            .placeBid(
+                              new BN(bidAmount),
+                              proposal,
+                              bidUri,
+                              new BN(deliveryTime),
+                            )
+                            .accounts({
+                              agent: walletPk!,
+                              job: selectedJob.publicKey,
+                              escrow: selectedEscrowPda,
+                              bid: selectedBidPda,
+                              systemProgram: SystemProgram.programId,
+                            })
+                            .rpc(),
+                        ).then(refreshMarketplace);
+                      }}
+                    >
+                      Submit Bid
+                    </button>
+                  </div>
+                </div>
+
+                {/* Existing Bids */}
+                <div className="offer-section" style={{ marginTop: 12 }}>
+                  <h3>Bids ({selectedJobBids.length})</h3>
+                  {selectedJobBids.length === 0 && (
+                    <p style={{ color: "var(--text-muted)", fontSize: 13 }}>
+                      No bids yet. Be the first to bid.
+                    </p>
+                  )}
+                  <div className="bid-list">
+                    {selectedJobBids.map((bid) => (
+                      <div key={bid.publicKey.toBase58()} className="bid-row">
+                        <span className="bid-agent">{shortKey(bid.account.agent)}</span>
+                        <span className="bid-amount">
+                          {lamportsToSol(bid.account.amount)} SOL
+                        </span>
+                        <span className={`badge badge-${enumKey(bid.account.status)}`}>
+                          {enumKey(bid.account.status)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
-          </section>
+          </div>
         </section>
       )}
 
+      {/* ─── Browse Services ─── */}
+      {view === "services" && (
+        <section className="card">
+          <div className="card-header">
+            <h2>Available Services</h2>
+            <span className="count">{services.length} providers</span>
+          </div>
+          {services.length === 0 && (
+            <div className="empty-state">
+              <p>
+                No services listed yet. Agents and freelancers can post their
+                available services from the Post tab.
+              </p>
+            </div>
+          )}
+          <div className="service-grid">
+            {services.map((svc) => {
+              const svcSkillsList: string[] = svc.account.skills || [];
+              return (
+                <div key={svc.publicKey.toBase58()} className="service-card">
+                  <div className="service-card-top">
+                    <h3>{svc.account.title}</h3>
+                    <span
+                      className={`badge ${svc.account.isActive ? "badge-active" : "badge-inactive"}`}
+                    >
+                      {svc.account.isActive ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                  <p>{svc.account.description}</p>
+                  <div className="skill-tags" style={{ marginBottom: 12 }}>
+                    {svcSkillsList.map((skill, i) => (
+                      <span key={i} className="skill-tag">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end" }}>
+                    <div>
+                      <span className="service-rate">
+                        {lamportsToSol(svc.account.hourlyRate)} SOL
+                        <small>/hr</small>
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                      {shortKey(svc.account.agent)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Show registered agents */}
+          {agents.length > 0 && (
+            <div style={{ marginTop: 24 }}>
+              <div className="card-header">
+                <h2>Registered Agents</h2>
+                <span className="count">{agents.length} agents</span>
+              </div>
+              <div className="service-grid">
+                {agents.map((agent) => {
+                  const agentSkills: string[] = agent.account.skills || [];
+                  return (
+                    <div key={agent.publicKey.toBase58()} className="service-card">
+                      <div className="service-card-top">
+                        <h3>{agent.account.name}</h3>
+                        <span className="badge badge-agent">Agent</span>
+                      </div>
+                      <div className="skill-tags" style={{ marginBottom: 12 }}>
+                        {agentSkills.map((skill, i) => (
+                          <span key={i} className="skill-tag">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="listing-meta">
+                        <span>{agent.account.jobsCompleted?.toString() || 0} jobs done</span>
+                        <span>
+                          {lamportsToSol(agent.account.totalEarned || 0)} SOL earned
+                        </span>
+                        <span>{shortKey(agent.account.authority)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ─── Post Job or Service ─── */}
       {view === "post" && (
         <section className="card form-page">
-          <div className="card-head">
-            <h2>Issue New Contract</h2>
-            <span>Register terms and provision escrow</span>
+          <div className="card-header">
+            <h2>{postMode === "job" ? "Post a Job" : "List a Service"}</h2>
+            <div style={{ display: "flex", gap: 4, background: "var(--bg-raised)", padding: 4, borderRadius: "var(--radius-sm)" }}>
+              <button
+                className={`btn btn-sm ${postMode === "job" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setPostMode("job")}
+              >
+                Job
+              </button>
+              <button
+                className={`btn btn-sm ${postMode === "service" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => setPostMode("service")}
+              >
+                Service
+              </button>
+            </div>
           </div>
-          <div className="form-grid">
-            <label>Title
-              <input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
-            </label>
-            <label className="full">Description
-              <textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} />
-            </label>
-            <label>Metadata URI
-              <input value={jobUri} onChange={(e) => setJobUri(e.target.value)} />
-            </label>
-            <label>Deadline (unix)
-              <input type="number" value={deadline} onChange={(e) => setDeadline(Number(e.target.value))} />
-            </label>
-            <label>Budget (lamports)
-              <input type="number" value={budget} onChange={(e) => setBudget(Number(e.target.value))} />
-            </label>
-          </div>
-          <div className="row-actions">
-            <button
-              onClick={() =>
-                run("createJob", async () => {
-                  const counter = await program!.account.jobCounter.fetch(pdas!.jobCounter);
-                  const nextJobId = Number(counter.count.toString());
-                  const nextJob = findPda([
-                    Buffer.from("job"),
-                    walletPk!.toBuffer(),
-                    toU64Le(nextJobId),
-                  ]);
 
-                  const sig = await program!.methods
-                    .createJob(
-                      jobTitle,
-                      jobDescription,
-                      jobUri,
-                      new BN(deadline),
-                      new BN(budget),
-                    )
-                    .accounts({
-                      client: walletPk!,
-                      jobCounter: pdas!.jobCounter,
-                      job: nextJob,
-                      systemProgram: SystemProgram.programId,
-                    })
-                    .rpc();
+          {postMode === "job" ? (
+            <>
+              <div className="form-grid">
+                <label>
+                  Title
+                  <input
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="e.g. Build a landing page"
+                  />
+                </label>
+                <label>
+                  Budget (lamports)
+                  <input
+                    type="number"
+                    value={budget}
+                    onChange={(e) => setBudget(Number(e.target.value))}
+                  />
+                </label>
+                <label className="full">
+                  Description
+                  <textarea
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    placeholder="Describe the work needed..."
+                  />
+                </label>
+                <label>
+                  Metadata URI
+                  <input value={jobUri} onChange={(e) => setJobUri(e.target.value)} />
+                </label>
+                <label>
+                  Deadline (unix)
+                  <input
+                    type="number"
+                    value={deadline}
+                    onChange={(e) => setDeadline(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+              <div className="form-actions">
+                <button
+                  className="btn"
+                  onClick={() =>
+                    run("createJob", async () => {
+                      const counter = await (program!.account as any).jobCounter.fetch(
+                        pdas!.jobCounter,
+                      );
+                      const nextJobId = Number(counter.count.toString());
+                      const nextJob = findPda([
+                        Buffer.from("job"),
+                        walletPk!.toBuffer(),
+                        toU64Le(nextJobId),
+                      ]);
 
-                  setLastPostedJobKey(nextJob.toBase58());
-                  return sig;
-                }).then(refreshMarketplace)
-              }
-            >
-              Register Contract
-            </button>
-            <button
-              className="primary"
-              onClick={() => {
-                if (!ownTargetJob || !ownTargetEscrow) {
-                  alert("Create a job first (or refresh to load your existing jobs).");
-                  return;
-                }
-                run("fundEscrow", () =>
-                  program!.methods
-                    .fundEscrow(new BN(budget))
-                    .accounts({
-                      client: walletPk!,
-                      job: ownTargetJob,
-                      escrow: ownTargetEscrow,
-                      systemProgram: SystemProgram.programId,
-                    })
-                    .rpc(),
-                );
-              }}
-            >
-              Provision Escrow
-            </button>
-          </div>
+                      const sig = await program!.methods
+                        .createJob(
+                          jobTitle,
+                          jobDescription,
+                          jobUri,
+                          new BN(deadline),
+                          new BN(budget),
+                        )
+                        .accounts({
+                          client: walletPk!,
+                          jobCounter: pdas!.jobCounter,
+                          job: nextJob,
+                          systemProgram: SystemProgram.programId,
+                        })
+                        .rpc();
+
+                      setLastPostedJobKey(nextJob.toBase58());
+                      return sig;
+                    }).then(refreshMarketplace)
+                  }
+                >
+                  Create Job
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    if (!ownTargetJob || !ownTargetEscrow) {
+                      alert("Create a job first.");
+                      return;
+                    }
+                    run("fundEscrow", () =>
+                      program!.methods
+                        .fundEscrow(new BN(budget))
+                        .accounts({
+                          client: walletPk!,
+                          job: ownTargetJob,
+                          escrow: ownTargetEscrow,
+                          systemProgram: SystemProgram.programId,
+                        })
+                        .rpc(),
+                    );
+                  }}
+                >
+                  Fund Escrow
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="form-grid">
+                <label>
+                  Service Title
+                  <input
+                    value={svcTitle}
+                    onChange={(e) => setSvcTitle(e.target.value)}
+                    placeholder="e.g. Smart Contract Auditing"
+                  />
+                </label>
+                <label>
+                  Hourly Rate (lamports)
+                  <input
+                    type="number"
+                    value={svcHourlyRate}
+                    onChange={(e) => setSvcHourlyRate(Number(e.target.value))}
+                  />
+                </label>
+                <label className="full">
+                  Description
+                  <textarea
+                    value={svcDescription}
+                    onChange={(e) => setSvcDescription(e.target.value)}
+                    placeholder="Describe your service offering..."
+                  />
+                </label>
+                <label>
+                  Skills (comma-separated)
+                  <input
+                    value={svcSkills}
+                    onChange={(e) => setSvcSkills(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Min Budget (lamports)
+                  <input
+                    type="number"
+                    value={svcMinBudget}
+                    onChange={(e) => setSvcMinBudget(Number(e.target.value))}
+                  />
+                </label>
+                <label>
+                  Metadata URI
+                  <input value={svcUri} onChange={(e) => setSvcUri(e.target.value)} />
+                </label>
+              </div>
+              <div className="form-actions">
+                <button
+                  className="btn btn-primary"
+                  onClick={() =>
+                    run("createServiceListing", async () => {
+                      const counter = await (program!.account as any).serviceCounter.fetch(
+                        pdas!.serviceCounter,
+                      );
+                      const nextId = Number(counter.count.toString());
+                      const nextListing = findPda([
+                        Buffer.from("service"),
+                        walletPk!.toBuffer(),
+                        toU64Le(nextId),
+                      ]);
+
+                      return program!.methods
+                        .createServiceListing(
+                          svcTitle,
+                          svcDescription,
+                          svcUri,
+                          svcSkills
+                            .split(",")
+                            .map((x) => x.trim())
+                            .filter(Boolean),
+                          new BN(svcHourlyRate),
+                          new BN(svcMinBudget),
+                        )
+                        .accounts({
+                          agent: walletPk!,
+                          serviceCounter: pdas!.serviceCounter,
+                          serviceListing: nextListing,
+                          systemProgram: SystemProgram.programId,
+                        })
+                        .rpc();
+                    }).then(refreshMarketplace)
+                  }
+                >
+                  List Service
+                </button>
+              </div>
+            </>
+          )}
         </section>
       )}
 
-      {view === "ops" && (
-        <section className="layout-ops">
-          <article className="card">
-            <div className="card-head"><h2>Account Provisioning</h2><span>one-time</span></div>
+      {/* ─── Dashboard ─── */}
+      {view === "dashboard" && (
+        <section className="ops-layout">
+          <div className="card">
+            <div className="card-header">
+              <h2>Account Setup</h2>
+              <span className="count">one-time</span>
+            </div>
             <button
+              className="btn"
               onClick={() =>
-                run("initializeJobCounter", () =>
+                run("initJobCounter", () =>
                   program!.methods
                     .initializeJobCounter()
                     .accounts({
@@ -574,47 +934,93 @@ export default function App() {
                 )
               }
             >
-              Initialize Contract Counter
+              Init Job Counter
             </button>
-            <label>Agent Name
-              <input value={profileName} onChange={(e) => setProfileName(e.target.value)} />
-            </label>
-            <label>Profile URI
-              <input value={profileUri} onChange={(e) => setProfileUri(e.target.value)} />
-            </label>
-            <label>Skills (comma-separated)
-              <input value={skills} onChange={(e) => setSkills(e.target.value)} />
-            </label>
             <button
-              className="primary"
+              className="btn"
               onClick={() =>
-                run("createAgentProfile", () =>
+                run("initServiceCounter", () =>
                   program!.methods
-                    .createAgentProfile(
-                      profileName,
-                      profileUri,
-                      skills.split(",").map((x) => x.trim()).filter(Boolean),
-                    )
+                    .initializeServiceCounter()
                     .accounts({
-                      authority: walletPk!,
-                      agentProfile: pdas!.agentProfile,
+                      agent: walletPk!,
+                      serviceCounter: pdas!.serviceCounter,
                       systemProgram: SystemProgram.programId,
                     })
                     .rpc(),
                 )
               }
             >
-              Register Agent Profile
+              Init Service Counter
             </button>
-          </article>
 
-          <article className="card">
-            <div className="card-head"><h2>Settlement Desk</h2><span>issuer scope</span></div>
-            <p className="muted">Targets your latest issued contract (or first contract owned by this wallet).</p>
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 4 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+                Register Agent Profile
+              </h3>
+              <div style={{ display: "grid", gap: 12 }}>
+                <label>
+                  Agent Name
+                  <input
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Profile URI
+                  <input
+                    value={profileUri}
+                    onChange={(e) => setProfileUri(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Skills (comma-separated)
+                  <input
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
+                  />
+                </label>
+                <button
+                  className="btn btn-primary"
+                  onClick={() =>
+                    run("createAgentProfile", () =>
+                      program!.methods
+                        .createAgentProfile(
+                          profileName,
+                          profileUri,
+                          skills
+                            .split(",")
+                            .map((x) => x.trim())
+                            .filter(Boolean),
+                        )
+                        .accounts({
+                          authority: walletPk!,
+                          agentProfile: pdas!.agentProfile,
+                          systemProgram: SystemProgram.programId,
+                        })
+                        .rpc(),
+                    )
+                  }
+                >
+                  Register Agent
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <h2>Settlement</h2>
+              <span className="count">manage contracts</span>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12 }}>
+              Actions target your latest posted job.
+            </p>
             <button
+              className="btn"
               onClick={() => {
                 if (!ownTargetJob || !ownTargetEscrow || !ownTargetBid) {
-                  alert("Missing contract/offer context. Sync index and confirm offers exist.");
+                  alert("Missing contract/bid context. Sync and confirm bids exist.");
                   return;
                 }
                 run("acceptBid", () =>
@@ -633,9 +1039,10 @@ export default function App() {
               Accept Bid
             </button>
             <button
+              className="btn"
               onClick={() => {
                 if (!ownTargetJob) {
-                  alert("Missing own job context.");
+                  alert("Missing job context.");
                   return;
                 }
                 run("submitWork", () =>
@@ -649,10 +1056,10 @@ export default function App() {
               Submit Work
             </button>
             <button
-              className="primary"
+              className="btn btn-primary"
               onClick={() => {
                 if (!ownTargetJob || !ownTargetEscrow || !ownTargetBid) {
-                  alert("Missing own job/bid context. Accept a bid first.");
+                  alert("Missing context. Accept a bid first.");
                   return;
                 }
                 run("approveAndRelease", () =>
@@ -669,15 +1076,41 @@ export default function App() {
                 );
               }}
             >
-              Authorize Release
+              Release Payment
             </button>
-          </article>
+            <button
+              className="btn"
+              style={{ borderColor: "var(--red)", color: "var(--red)" }}
+              onClick={() => {
+                if (!ownTargetJob || !ownTargetEscrow) {
+                  alert("Missing job/escrow context.");
+                  return;
+                }
+                run("cancelAndRefund", () =>
+                  program!.methods
+                    .cancelJobAndRefund()
+                    .accounts({
+                      client: walletPk!,
+                      job: ownTargetJob,
+                      escrow: ownTargetEscrow,
+                    })
+                    .rpc(),
+                );
+              }}
+            >
+              Cancel &amp; Refund
+            </button>
+          </div>
         </section>
       )}
 
-      <section className="card logs">
-        <div className="card-head"><h2>Audit Log</h2><span>{CLUSTER_URL}</span></div>
-        <pre>{logs.join("\n") || "No events logged."}</pre>
+      {/* ─── Audit Log ─── */}
+      <section className="log-section">
+        <div className="card-header">
+          <h2 style={{ fontSize: 14 }}>Activity Log</h2>
+          <span className="count">{CLUSTER_URL}</span>
+        </div>
+        <pre>{logs.join("\n") || "No events logged. Connect wallet and sync to get started."}</pre>
       </section>
     </div>
   );

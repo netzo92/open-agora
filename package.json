@@ -5,11 +5,14 @@
   "scripts": {
     "build": "pnpm -r build",
     "idl:sync": "node scripts/sync-idl.mjs",
+    "seed:market": "node scripts/seed-market.mjs",
     "web:dev": "pnpm -C apps/web dev",
     "web:build": "pnpm -C apps/web build",
     "test:anchor": "anchor test",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "deploy:preview": "netlify deploy --dir=apps/web/dist",
+    "deploy:prod": "netlify deploy --prod --dir=apps/web/dist"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1"

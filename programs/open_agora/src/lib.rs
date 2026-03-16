@@ -14,6 +14,8 @@ const SEED_JOB_COUNTER: &[u8] = b"job_counter";
 const SEED_JOB: &[u8] = b"job";
 const SEED_ESCROW: &[u8] = b"escrow";
 const SEED_BID: &[u8] = b"bid";
+const SEED_SERVICE_COUNTER: &[u8] = b"service_counter";
+const SEED_SERVICE: &[u8] = b"service";
 
 #[program]
 pub mod open_agora {
@@ -280,6 +282,71 @@ pub mod open_agora {
 
         Ok(())
     }
+
+    pub fn initialize_service_counter(ctx: Context<InitializeServiceCounter>) -> Result<()> {
+        let counter = &mut ctx.accounts.service_counter;
+        counter.authority = ctx.accounts.agent.key();
+        counter.count = 0;
+        counter.bump = ctx.bumps.service_counter;
+        Ok(())
+    }
+
+    pub fn create_service_listing(
+        ctx: Context<CreateServiceListing>,
+        title: String,
+        description: String,
+        metadata_uri: String,
+        skills: Vec<String>,
+        hourly_rate: u64,
+        min_budget: u64,
+    ) -> Result<()> {
+        require!(title.len() <= ServiceListing::MAX_TITLE_LEN, AgoraError::TitleTooLong);
+        require!(
+            description.len() <= ServiceListing::MAX_DESC_LEN,
+            AgoraError::DescriptionTooLong
+        );
+        require!(
+            metadata_uri.len() <= ServiceListing::MAX_URI_LEN,
+            AgoraError::UriTooLong
+        );
+        require!(skills.len() <= ServiceListing::MAX_SKILLS, AgoraError::TooManySkills);
+        for skill in &skills {
+            require!(
+                skill.len() <= ServiceListing::MAX_SKILL_LEN,
+                AgoraError::SkillTooLong
+            );
+        }
+
+        let now = Clock::get()?.unix_timestamp;
+        let counter = &mut ctx.accounts.service_counter;
+        let listing_id = counter.count;
+
+        let listing = &mut ctx.accounts.service_listing;
+        listing.agent = ctx.accounts.agent.key();
+        listing.listing_id = listing_id;
+        listing.title = title;
+        listing.description = description;
+        listing.metadata_uri = metadata_uri;
+        listing.skills = skills;
+        listing.hourly_rate = hourly_rate;
+        listing.min_budget = min_budget;
+        listing.is_active = true;
+        listing.bump = ctx.bumps.service_listing;
+        listing.created_at = now;
+
+        counter.count = counter
+            .count
+            .checked_add(1)
+            .ok_or(AgoraError::ArithmeticOverflow)?;
+
+        Ok(())
+    }
+
+    pub fn toggle_service_listing(ctx: Context<ToggleServiceListing>) -> Result<()> {
+        let listing = &mut ctx.accounts.service_listing;
+        listing.is_active = !listing.is_active;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -440,6 +507,54 @@ pub struct CancelJobAndRefund<'info> {
         constraint = escrow.job == job.key() @ AgoraError::BidJobMismatch,
     )]
     pub escrow: Account<'info, Escrow>,
+}
+
+#[derive(Accounts)]
+pub struct InitializeServiceCounter<'info> {
+    #[account(mut)]
+    pub agent: Signer<'info>,
+    #[account(
+        init,
+        payer = agent,
+        space = ServiceCounter::SPACE,
+        seeds = [SEED_SERVICE_COUNTER, agent.key().as_ref()],
+        bump
+    )]
+    pub service_counter: Account<'info, ServiceCounter>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct CreateServiceListing<'info> {
+    #[account(mut)]
+    pub agent: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [SEED_SERVICE_COUNTER, agent.key().as_ref()],
+        bump = service_counter.bump,
+        constraint = service_counter.authority == agent.key() @ AgoraError::Unauthorized,
+    )]
+    pub service_counter: Account<'info, ServiceCounter>,
+    #[account(
+        init,
+        payer = agent,
+        space = ServiceListing::SPACE,
+        seeds = [SEED_SERVICE, agent.key().as_ref(), &service_counter.count.to_le_bytes()],
+        bump
+    )]
+    pub service_listing: Account<'info, ServiceListing>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ToggleServiceListing<'info> {
+    #[account(mut)]
+    pub agent: Signer<'info>,
+    #[account(
+        mut,
+        constraint = service_listing.agent == agent.key() @ AgoraError::Unauthorized,
+    )]
+    pub service_listing: Account<'info, ServiceListing>,
 }
 
 fn transfer_lamports(from: &AccountInfo, to: &AccountInfo, amount: u64) -> Result<()> {

@@ -44,4 +44,8 @@ pub enum AgoraError {
     BudgetZero,
     #[msg("Math overflow")]
     ArithmeticOverflow,
+    #[msg("Service listing is not active")]
+    ServiceNotActive,
+    #[msg("Hourly rate must be non-negative")]
+    InvalidRate,
 }
