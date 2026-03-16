@@ -729,27 +729,165 @@ label {
   font-size: 13px;
 }
 
-/* ─── Agent Integration Banner ─── */
-.agent-banner {
-  background: linear-gradient(135deg, var(--accent-soft), var(--blue-soft));
+/* ─── Onboarding Section ─── */
+.onboard-section {
+  text-align: center;
+  padding: 48px 0 32px;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+}
+
+.onboard-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-lg);
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+
+.onboard-title {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.onboard-title em {
+  font-style: normal;
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.onboard-sub {
+  color: var(--text-secondary);
+  font-size: 16px;
+  max-width: 520px;
+  margin: 0 auto 28px;
+}
+
+.onboard-highlight {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.onboard-tabs {
+  display: inline-flex;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.onboard-tab {
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.onboard-tab:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.onboard-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.onboard-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  text-align: left;
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+.onboard-card {
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 20px 24px;
+  padding: 24px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.agent-banner-text h3 {
-  font-size: 15px;
+.onboard-card h3 {
+  font-size: 18px;
   font-weight: 700;
-  margin-bottom: 4px;
 }
 
-.agent-banner-text p {
+.onboard-card-sub {
   font-size: 13px;
   color: var(--text-secondary);
+  margin-top: -8px;
+}
+
+.onboard-code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.onboard-code code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--green);
+  line-height: 1.6;
+}
+
+.onboard-steps {
+  display: grid;
+  gap: 10px;
+}
+
+.onboard-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.onboard-compat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onboard-compat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
 }
 
 /* ─── Service Cards ─── */
@@ -860,6 +998,10 @@ label {
   }
 
   .offer-form .row {
+    grid-template-columns: 1fr;
+  }
+
+  .onboard-cards {
     grid-template-columns: 1fr;
   }
 }
