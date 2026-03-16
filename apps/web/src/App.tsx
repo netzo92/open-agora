@@ -32,7 +32,20 @@ declare global {
 }
 
 const PROGRAM_ID = new PublicKey(idlJson.address);
-const CLUSTER_URL = "http://127.0.0.1:8899";
+
+type Network = "devnet" | "mainnet-beta" | "localnet";
+
+const CLUSTER_URLS: Record<Network, string> = {
+  devnet: "https://api.devnet.solana.com",
+  "mainnet-beta": "https://api.mainnet-beta.solana.com",
+  localnet: "http://127.0.0.1:8899",
+};
+
+const NETWORK_LABELS: Record<Network, string> = {
+  devnet: "Devnet",
+  "mainnet-beta": "Mainnet",
+  localnet: "Localnet",
+};
 
 function findPda(seeds: (Buffer | Uint8Array)[]): PublicKey {
   return PublicKey.findProgramAddressSync(seeds, PROGRAM_ID)[0];
@@ -71,6 +84,7 @@ function getPhantomProvider(): PhantomProvider | null {
 }
 
 export default function App() {
+  const [network, setNetwork] = useState<Network>("devnet");
   const [wallet, setWallet] = useState<PhantomProvider | null>(null);
   const [walletPk, setWalletPk] = useState<PublicKey | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -113,7 +127,8 @@ export default function App() {
   const [lastPostedJobKey, setLastPostedJobKey] = useState("");
   const [postMode, setPostMode] = useState<"job" | "service">("job");
 
-  const connection = useMemo(() => new Connection(CLUSTER_URL, "confirmed"), []);
+  const clusterUrl = CLUSTER_URLS[network];
+  const connection = useMemo(() => new Connection(clusterUrl, "confirmed"), [clusterUrl]);
 
   const provider = useMemo(() => {
     if (!wallet) return null;
@@ -313,9 +328,9 @@ export default function App() {
       <div className="topbar">
         <div className="topbar-inner">
           <div className="logo">
-            <div className="logo-icon">OA</div>
+            <img src="/logo.png" alt="Open Agora" className="logo-img" />
             <span className="logo-text">Open Agora</span>
-            <span className="logo-badge">Devnet</span>
+            <span className="logo-badge">{NETWORK_LABELS[network]}</span>
           </div>
 
           <nav className="nav">
@@ -331,6 +346,22 @@ export default function App() {
           </nav>
 
           <div className="topbar-right">
+            <select
+              className="network-select"
+              value={network}
+              onChange={(e) => {
+                setNetwork(e.target.value as Network);
+                setJobs([]);
+                setAllBids([]);
+                setServices([]);
+                setAgents([]);
+                log(`Switched to ${NETWORK_LABELS[e.target.value as Network]}`);
+              }}
+            >
+              <option value="devnet">Devnet</option>
+              <option value="mainnet-beta">Mainnet</option>
+              <option value="localnet">Localnet</option>
+            </select>
             <button className="btn btn-sm" onClick={refreshMarketplace}>
               Sync
             </button>
@@ -1108,7 +1139,7 @@ export default function App() {
       <section className="log-section">
         <div className="card-header">
           <h2 style={{ fontSize: 14 }}>Activity Log</h2>
-          <span className="count">{CLUSTER_URL}</span>
+          <span className="count">{clusterUrl}</span>
         </div>
         <pre>{logs.join("\n") || "No events logged. Connect wallet and sync to get started."}</pre>
       </section>
