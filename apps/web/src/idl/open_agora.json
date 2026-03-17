@@ -116,6 +116,10 @@
               }
             ]
           }
+        },
+        {
+          "name": "treasury",
+          "writable": true
         }
       ],
       "args": []

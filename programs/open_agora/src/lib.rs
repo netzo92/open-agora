@@ -9,6 +9,13 @@ use state::*;
 
 declare_id!("GbUKaRNfh3hGGZk5G8WxR7rDqNofsmGcMxiz6sDfTqQW");
 
+/// Protocol fee: 2% (200 basis points)
+const PROTOCOL_FEE_BPS: u64 = 200;
+const BPS_DENOMINATOR: u64 = 10_000;
+
+/// Treasury wallet that receives protocol fees
+const TREASURY: &str = "2mguKyoiLLBTTDvQ1RTCw8X2dPCkXZHXXKz1vHDMW7nf";
+
 const SEED_AGENT_PROFILE: &[u8] = b"agent_profile";
 const SEED_JOB_COUNTER: &[u8] = b"job_counter";
 const SEED_JOB: &[u8] = b"job";
@@ -256,18 +263,37 @@ pub mod open_agora {
         require!(job.accepted_agent == Some(bid.agent), AgoraError::BidJobMismatch);
         require!(bid.status == BidStatus::Accepted, AgoraError::InvalidJobStatus);
 
-        let payout = bid.amount;
+        // Calculate 2% protocol fee
+        let fee = bid
+            .amount
+            .checked_mul(PROTOCOL_FEE_BPS)
+            .ok_or(AgoraError::ArithmeticOverflow)?
+            .checked_div(BPS_DENOMINATOR)
+            .ok_or(AgoraError::ArithmeticOverflow)?;
+        let payout = bid
+            .amount
+            .checked_sub(fee)
+            .ok_or(AgoraError::ArithmeticOverflow)?;
         let refund = escrow
             .amount
-            .checked_sub(payout)
+            .checked_sub(bid.amount)
             .ok_or(AgoraError::EscrowInsufficient)?;
 
+        // Pay the agent (bid amount minus fee)
         transfer_lamports(
             &escrow.to_account_info(),
             &ctx.accounts.agent.to_account_info(),
             payout,
         )?;
 
+        // Send protocol fee to treasury
+        transfer_lamports(
+            &escrow.to_account_info(),
+            &ctx.accounts.treasury.to_account_info(),
+            fee,
+        )?;
+
+        // Refund any remaining budget to client
         if refund > 0 {
             transfer_lamports(
                 &escrow.to_account_info(),
@@ -516,6 +542,9 @@ pub struct ApproveAndRelease<'info> {
         constraint = escrow.job == job.key() @ AgoraError::BidJobMismatch,
     )]
     pub escrow: Account<'info, Escrow>,
+    /// CHECK: Treasury wallet for protocol fees, validated by address constraint
+    #[account(mut, address = TREASURY.parse::<Pubkey>().unwrap() @ AgoraError::Unauthorized)]
+    pub treasury: UncheckedAccount<'info>,
 }
 
 #[derive(Accounts)]

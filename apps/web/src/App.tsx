@@ -32,6 +32,7 @@ declare global {
 }
 
 const PROGRAM_ID = new PublicKey(idlJson.address);
+const TREASURY = new PublicKey("2mguKyoiLLBTTDvQ1RTCw8X2dPCkXZHXXKz1vHDMW7nf");
 
 type Network = "devnet" | "mainnet-beta" | "localnet";
 
@@ -1214,6 +1215,7 @@ export default function App() {
                       job: ownTargetJob,
                       bid: ownTargetBid,
                       escrow: ownTargetEscrow,
+                      treasury: TREASURY,
                     })
                     .rpc(),
                 );
