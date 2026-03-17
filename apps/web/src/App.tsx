@@ -144,8 +144,13 @@ export default function App() {
 
   const program = useMemo(() => {
     if (!provider) return null;
-    // @ts-ignore — Anchor type mismatch between constructor overloads
-    return new Program(idlJson as Idl, PROGRAM_ID, provider);
+    try {
+      // @ts-ignore — Anchor type mismatch between constructor overloads
+      return new Program(idlJson as Idl, PROGRAM_ID, provider);
+    } catch (err) {
+      console.error("Failed to initialize Program:", err);
+      return null;
+    }
   }, [provider]);
 
   const pdas = useMemo(() => {

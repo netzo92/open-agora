@@ -1,44 +1,30 @@
 {
-  "address": "GbUKaRNfh3hGGZk5G8WxR7rDqNofsmGcMxiz6sDfTqQW",
-  "metadata": {
-    "name": "open_agora",
-    "version": "0.1.0",
-    "spec": "0.1.0",
-    "description": "Created with Anchor"
-  },
+  "version": "0.1.0",
+  "name": "openAgora",
+  "address": "4m335ZpQpctjYKLp1bt4zU8QVYg8F5Dt7faPxsqZ1Uyf",
   "instructions": [
     {
-      "name": "accept_bid",
-      "discriminator": [
-        196,
-        191,
-        1,
-        229,
-        144,
-        172,
-        122,
-        227
-      ],
+      "name": "acceptBid",
       "accounts": [
         {
           "name": "client",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "job"
-          ]
+          "isMut": true,
+          "isSigner": true
         },
         {
           "name": "job",
-          "writable": true
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "bid",
-          "writable": true
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "escrow",
-          "writable": true,
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -60,43 +46,45 @@
           }
         }
       ],
-      "args": []
+      "args": [],
+      "discriminator": [
+        196,
+        191,
+        1,
+        229,
+        144,
+        172,
+        122,
+        227
+      ]
     },
     {
-      "name": "approve_and_release",
-      "discriminator": [
-        63,
-        254,
-        154,
-        45,
-        149,
-        32,
-        80,
-        236
-      ],
+      "name": "approveAndRelease",
       "accounts": [
         {
           "name": "client",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "job"
-          ]
+          "isMut": true,
+          "isSigner": true
         },
         {
           "name": "agent",
-          "writable": true
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "job",
-          "writable": true
+          "isMut": true,
+          "isSigner": false
         },
         {
-          "name": "bid"
+          "name": "bid",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "escrow",
-          "writable": true,
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -119,39 +107,39 @@
         },
         {
           "name": "treasury",
-          "writable": true
+          "isMut": true,
+          "isSigner": false
         }
       ],
-      "args": []
+      "args": [],
+      "discriminator": [
+        63,
+        254,
+        154,
+        45,
+        149,
+        32,
+        80,
+        236
+      ]
     },
     {
-      "name": "cancel_job_and_refund",
-      "discriminator": [
-        50,
-        152,
-        32,
-        10,
-        14,
-        46,
-        103,
-        200
-      ],
+      "name": "cancelJobAndRefund",
       "accounts": [
         {
           "name": "client",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "job"
-          ]
+          "isMut": true,
+          "isSigner": true
         },
         {
           "name": "job",
-          "writable": true
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "escrow",
-          "writable": true,
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -173,29 +161,30 @@
           }
         }
       ],
-      "args": []
+      "args": [],
+      "discriminator": [
+        50,
+        152,
+        32,
+        10,
+        14,
+        46,
+        103,
+        200
+      ]
     },
     {
-      "name": "create_agent_profile",
-      "discriminator": [
-        107,
-        90,
-        12,
-        230,
-        174,
-        51,
-        166,
-        91
-      ],
+      "name": "createAgentProfile",
       "accounts": [
         {
           "name": "authority",
-          "writable": true,
-          "signer": true
+          "isMut": true,
+          "isSigner": true
         },
         {
-          "name": "agent_profile",
-          "writable": true,
+          "name": "agentProfile",
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -224,7 +213,9 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -234,7 +225,7 @@
           "type": "string"
         },
         {
-          "name": "metadata_uri",
+          "name": "metadataUri",
           "type": "string"
         },
         {
@@ -243,29 +234,30 @@
             "vec": "string"
           }
         }
+      ],
+      "discriminator": [
+        107,
+        90,
+        12,
+        230,
+        174,
+        51,
+        166,
+        91
       ]
     },
     {
-      "name": "create_job",
-      "discriminator": [
-        178,
-        130,
-        217,
-        110,
-        100,
-        27,
-        82,
-        119
-      ],
+      "name": "createJob",
       "accounts": [
         {
           "name": "client",
-          "writable": true,
-          "signer": true
+          "isMut": true,
+          "isSigner": true
         },
         {
-          "name": "job_counter",
-          "writable": true,
+          "name": "jobCounter",
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -293,7 +285,8 @@
         },
         {
           "name": "job",
-          "writable": true,
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -317,7 +310,9 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -331,7 +326,7 @@
           "type": "string"
         },
         {
-          "name": "metadata_uri",
+          "name": "metadataUri",
           "type": "string"
         },
         {
@@ -339,11 +334,9 @@
           "type": "i64"
         },
         {
-          "name": "deadline_type",
+          "name": "deadlineType",
           "type": {
-            "defined": {
-              "name": "DeadlineType"
-            }
+            "defined": "DeadlineType"
           }
         },
         {
@@ -351,44 +344,43 @@
           "type": "u64"
         },
         {
-          "name": "job_type",
+          "name": "jobType",
           "type": {
-            "defined": {
-              "name": "JobType"
-            }
+            "defined": "JobType"
           }
         },
         {
-          "name": "hourly_rate",
+          "name": "hourlyRate",
           "type": "u64"
         },
         {
-          "name": "max_hours",
+          "name": "maxHours",
           "type": "u32"
         }
+      ],
+      "discriminator": [
+        178,
+        130,
+        217,
+        110,
+        100,
+        27,
+        82,
+        119
       ]
     },
     {
-      "name": "create_service_listing",
-      "discriminator": [
-        91,
-        37,
-        216,
-        26,
-        93,
-        146,
-        13,
-        182
-      ],
+      "name": "createServiceListing",
       "accounts": [
         {
           "name": "agent",
-          "writable": true,
-          "signer": true
+          "isMut": true,
+          "isSigner": true
         },
         {
-          "name": "service_counter",
-          "writable": true,
+          "name": "serviceCounter",
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -419,8 +411,9 @@
           }
         },
         {
-          "name": "service_listing",
-          "writable": true,
+          "name": "serviceListing",
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -448,7 +441,9 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -462,7 +457,7 @@
           "type": "string"
         },
         {
-          "name": "metadata_uri",
+          "name": "metadataUri",
           "type": "string"
         },
         {
@@ -472,43 +467,42 @@
           }
         },
         {
-          "name": "hourly_rate",
+          "name": "hourlyRate",
           "type": "u64"
         },
         {
-          "name": "min_budget",
+          "name": "minBudget",
           "type": "u64"
         }
+      ],
+      "discriminator": [
+        91,
+        37,
+        216,
+        26,
+        93,
+        146,
+        13,
+        182
       ]
     },
     {
-      "name": "fund_escrow",
-      "discriminator": [
-        155,
-        18,
-        218,
-        141,
-        182,
-        213,
-        69,
-        201
-      ],
+      "name": "fundEscrow",
       "accounts": [
         {
           "name": "client",
-          "writable": true,
-          "signer": true,
-          "relations": [
-            "job"
-          ]
+          "isMut": true,
+          "isSigner": true
         },
         {
           "name": "job",
-          "writable": true
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "escrow",
-          "writable": true,
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -530,7 +524,9 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -539,29 +535,30 @@
           "name": "amount",
           "type": "u64"
         }
+      ],
+      "discriminator": [
+        155,
+        18,
+        218,
+        141,
+        182,
+        213,
+        69,
+        201
       ]
     },
     {
-      "name": "initialize_job_counter",
-      "discriminator": [
-        127,
-        185,
-        121,
-        123,
-        194,
-        122,
-        145,
-        200
-      ],
+      "name": "initializeJobCounter",
       "accounts": [
         {
           "name": "client",
-          "writable": true,
-          "signer": true
+          "isMut": true,
+          "isSigner": true
         },
         {
-          "name": "job_counter",
-          "writable": true,
+          "name": "jobCounter",
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -588,33 +585,36 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [],
+      "discriminator": [
+        127,
+        185,
+        121,
+        123,
+        194,
+        122,
+        145,
+        200
+      ]
     },
     {
-      "name": "initialize_service_counter",
-      "discriminator": [
-        230,
-        89,
-        240,
-        138,
-        32,
-        39,
-        190,
-        72
-      ],
+      "name": "initializeServiceCounter",
       "accounts": [
         {
           "name": "agent",
-          "writable": true,
-          "signer": true
+          "isMut": true,
+          "isSigner": true
         },
         {
-          "name": "service_counter",
-          "writable": true,
+          "name": "serviceCounter",
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -645,37 +645,41 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [],
+      "discriminator": [
+        230,
+        89,
+        240,
+        138,
+        32,
+        39,
+        190,
+        72
+      ]
     },
     {
-      "name": "place_bid",
-      "discriminator": [
-        238,
-        77,
-        148,
-        91,
-        200,
-        151,
-        92,
-        146
-      ],
+      "name": "placeBid",
       "accounts": [
         {
           "name": "agent",
-          "writable": true,
-          "signer": true
+          "isMut": true,
+          "isSigner": true
         },
         {
           "name": "job",
-          "writable": true
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "escrow",
-          "writable": true,
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -698,7 +702,8 @@
         },
         {
           "name": "bid",
-          "writable": true,
+          "isMut": true,
+          "isSigner": false,
           "pda": {
             "seeds": [
               {
@@ -721,7 +726,9 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false,
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -735,17 +742,40 @@
           "type": "string"
         },
         {
-          "name": "metadata_uri",
+          "name": "metadataUri",
           "type": "string"
         },
         {
-          "name": "delivery_time",
+          "name": "deliveryTime",
           "type": "u64"
         }
+      ],
+      "discriminator": [
+        238,
+        77,
+        148,
+        91,
+        200,
+        151,
+        92,
+        146
       ]
     },
     {
-      "name": "submit_work",
+      "name": "submitWork",
+      "accounts": [
+        {
+          "name": "agent",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "job",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [],
       "discriminator": [
         158,
         80,
@@ -755,21 +785,23 @@
         130,
         101,
         253
-      ],
+      ]
+    },
+    {
+      "name": "toggleServiceListing",
       "accounts": [
         {
           "name": "agent",
-          "signer": true
+          "isMut": true,
+          "isSigner": true
         },
         {
-          "name": "job",
-          "writable": true
+          "name": "serviceListing",
+          "isMut": true,
+          "isSigner": false
         }
       ],
-      "args": []
-    },
-    {
-      "name": "toggle_service_listing",
+      "args": [],
       "discriminator": [
         157,
         61,
@@ -779,19 +811,7 @@
         198,
         22,
         208
-      ],
-      "accounts": [
-        {
-          "name": "agent",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "service_listing",
-          "writable": true
-        }
-      ],
-      "args": []
+      ]
     }
   ],
   "accounts": [
@@ -806,7 +826,70 @@
         87,
         86,
         205
-      ]
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey",
+            "docs": [
+              "Wallet that owns/controls this agent"
+            ]
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "docs": [
+              "Human-readable handle (max 64 chars)"
+            ]
+          },
+          {
+            "name": "metadataUri",
+            "type": "string",
+            "docs": [
+              "IPFS CID or URL for extended metadata (bio, avatar, links)"
+            ]
+          },
+          {
+            "name": "skills",
+            "type": {
+              "vec": "string"
+            },
+            "docs": [
+              "Skill tags (up to 10, each max 32 chars)"
+            ]
+          },
+          {
+            "name": "bump",
+            "type": "u8",
+            "docs": [
+              "PDA bump"
+            ]
+          },
+          {
+            "name": "createdAt",
+            "type": "i64",
+            "docs": [
+              "Unix timestamp of registration"
+            ]
+          },
+          {
+            "name": "totalEarned",
+            "type": "u64",
+            "docs": [
+              "Lifetime earnings in lamports"
+            ]
+          },
+          {
+            "name": "jobsCompleted",
+            "type": "u32",
+            "docs": [
+              "Count of successfully completed jobs"
+            ]
+          }
+        ]
+      }
     },
     {
       "name": "Bid",
@@ -819,7 +902,68 @@
         145,
         180,
         88
-      ]
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "job",
+            "type": "pubkey",
+            "docs": [
+              "The Job this bid belongs to"
+            ]
+          },
+          {
+            "name": "agent",
+            "type": "pubkey",
+            "docs": [
+              "Agent who placed the bid"
+            ]
+          },
+          {
+            "name": "amount",
+            "type": "u64",
+            "docs": [
+              "Quoted price in lamports (must be <= job.budget)"
+            ]
+          },
+          {
+            "name": "proposal",
+            "type": "string",
+            "docs": [
+              "Cover letter / proposal text (max 512 chars)"
+            ]
+          },
+          {
+            "name": "metadataUri",
+            "type": "string",
+            "docs": [
+              "Optional IPFS link to detailed proposal"
+            ]
+          },
+          {
+            "name": "deliveryTime",
+            "type": "u64",
+            "docs": [
+              "Estimated delivery time in seconds"
+            ]
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": "BidStatus"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          }
+        ]
+      }
     },
     {
       "name": "Escrow",
@@ -832,7 +976,57 @@
         22,
         218,
         155
-      ]
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "job",
+            "type": "pubkey",
+            "docs": [
+              "Job this escrow belongs to"
+            ]
+          },
+          {
+            "name": "client",
+            "type": "pubkey",
+            "docs": [
+              "Client who funded the escrow"
+            ]
+          },
+          {
+            "name": "agent",
+            "type": {
+              "option": "pubkey"
+            },
+            "docs": [
+              "Agent to be paid (set when bid is accepted)"
+            ]
+          },
+          {
+            "name": "amount",
+            "type": "u64",
+            "docs": [
+              "Amount locked in lamports"
+            ]
+          },
+          {
+            "name": "released",
+            "type": "bool",
+            "docs": [
+              "Whether funds have been released"
+            ]
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          }
+        ]
+      }
     },
     {
       "name": "Job",
@@ -845,7 +1039,141 @@
         180,
         202,
         80
-      ]
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "client",
+            "type": "pubkey",
+            "docs": [
+              "Client who posted the job"
+            ]
+          },
+          {
+            "name": "jobId",
+            "type": "u64",
+            "docs": [
+              "Monotonically-increasing ID scoped to this client"
+            ]
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "docs": [
+              "Short title (max 128 chars)"
+            ]
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "docs": [
+              "Full description (max 2048 chars)"
+            ]
+          },
+          {
+            "name": "metadataUri",
+            "type": "string",
+            "docs": [
+              "IPFS CID or link to structured specs / attachments"
+            ]
+          },
+          {
+            "name": "deadline",
+            "type": "i64",
+            "docs": [
+              "Unix deadline timestamp (0 = no deadline)"
+            ]
+          },
+          {
+            "name": "deadlineType",
+            "type": {
+              "defined": "DeadlineType"
+            },
+            "docs": [
+              "What the deadline means"
+            ]
+          },
+          {
+            "name": "budget",
+            "type": "u64",
+            "docs": [
+              "Maximum budget the client escrowed (lamports)"
+            ]
+          },
+          {
+            "name": "jobType",
+            "type": {
+              "defined": "JobType"
+            },
+            "docs": [
+              "Fixed or Hourly"
+            ]
+          },
+          {
+            "name": "hourlyRate",
+            "type": "u64",
+            "docs": [
+              "Hourly rate in lamports (0 if Fixed)"
+            ]
+          },
+          {
+            "name": "maxHours",
+            "type": "u32",
+            "docs": [
+              "Max hours for hourly jobs (0 if Fixed)"
+            ]
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": "JobStatus"
+            },
+            "docs": [
+              "Lifecycle state"
+            ]
+          },
+          {
+            "name": "bump",
+            "type": "u8",
+            "docs": [
+              "PDA bump"
+            ]
+          },
+          {
+            "name": "createdAt",
+            "type": "i64",
+            "docs": [
+              "Unix timestamp of creation"
+            ]
+          },
+          {
+            "name": "acceptedAgent",
+            "type": {
+              "option": "pubkey"
+            },
+            "docs": [
+              "Set when accept_bid fires"
+            ]
+          },
+          {
+            "name": "acceptedBid",
+            "type": {
+              "option": "pubkey"
+            },
+            "docs": [
+              "Set when accept_bid fires"
+            ]
+          },
+          {
+            "name": "bidCount",
+            "type": "u32",
+            "docs": [
+              "Number of bids placed (for UI enumeration)"
+            ]
+          }
+        ]
+      }
     },
     {
       "name": "JobCounter",
@@ -858,7 +1186,24 @@
         53,
         195,
         39
-      ]
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "count",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
     },
     {
       "name": "ServiceCounter",
@@ -871,7 +1216,24 @@
         231,
         122,
         228
-      ]
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "count",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
     },
     {
       "name": "ServiceListing",
@@ -884,7 +1246,164 @@
         147,
         124,
         211
-      ]
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "agent",
+            "type": "pubkey",
+            "docs": [
+              "Agent who posted this service"
+            ]
+          },
+          {
+            "name": "listingId",
+            "type": "u64",
+            "docs": [
+              "Monotonically-increasing ID scoped to this agent"
+            ]
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "docs": [
+              "Service title (max 128 chars)"
+            ]
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "docs": [
+              "Full description of the service (max 2048 chars)"
+            ]
+          },
+          {
+            "name": "metadataUri",
+            "type": "string",
+            "docs": [
+              "IPFS CID or link to structured specs"
+            ]
+          },
+          {
+            "name": "skills",
+            "type": {
+              "vec": "string"
+            },
+            "docs": [
+              "Skill tags relevant to this service"
+            ]
+          },
+          {
+            "name": "hourlyRate",
+            "type": "u64",
+            "docs": [
+              "Hourly rate in lamports (0 = negotiable)"
+            ]
+          },
+          {
+            "name": "minBudget",
+            "type": "u64",
+            "docs": [
+              "Minimum budget in lamports (0 = no minimum)"
+            ]
+          },
+          {
+            "name": "isActive",
+            "type": "bool",
+            "docs": [
+              "Whether the listing is currently active"
+            ]
+          },
+          {
+            "name": "bump",
+            "type": "u8",
+            "docs": [
+              "PDA bump"
+            ]
+          },
+          {
+            "name": "createdAt",
+            "type": "i64",
+            "docs": [
+              "Unix timestamp of creation"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "BidStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Accepted"
+          },
+          {
+            "name": "Retracted"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DeadlineType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "BidWindow"
+          },
+          {
+            "name": "Completion"
+          }
+        ]
+      }
+    },
+    {
+      "name": "JobStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "InProgress"
+          },
+          {
+            "name": "WorkSubmitted"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "JobType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Fixed"
+          },
+          {
+            "name": "Hourly"
+          }
+        ]
+      }
     }
   ],
   "errors": [
@@ -1004,538 +1523,7 @@
       "msg": "Hourly rate must be non-negative"
     }
   ],
-  "types": [
-    {
-      "name": "AgentProfile",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "docs": [
-              "Wallet that owns/controls this agent"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "name",
-            "docs": [
-              "Human-readable handle (max 64 chars)"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "metadata_uri",
-            "docs": [
-              "IPFS CID or URL for extended metadata (bio, avatar, links)"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "skills",
-            "docs": [
-              "Skill tags (up to 10, each max 32 chars)"
-            ],
-            "type": {
-              "vec": "string"
-            }
-          },
-          {
-            "name": "bump",
-            "docs": [
-              "PDA bump"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "created_at",
-            "docs": [
-              "Unix timestamp of registration"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "total_earned",
-            "docs": [
-              "Lifetime earnings in lamports"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "jobs_completed",
-            "docs": [
-              "Count of successfully completed jobs"
-            ],
-            "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Bid",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "job",
-            "docs": [
-              "The Job this bid belongs to"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "agent",
-            "docs": [
-              "Agent who placed the bid"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "amount",
-            "docs": [
-              "Quoted price in lamports (must be <= job.budget)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "proposal",
-            "docs": [
-              "Cover letter / proposal text (max 512 chars)"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "metadata_uri",
-            "docs": [
-              "Optional IPFS link to detailed proposal"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "delivery_time",
-            "docs": [
-              "Estimated delivery time in seconds"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "status",
-            "type": {
-              "defined": {
-                "name": "BidStatus"
-              }
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "created_at",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "BidStatus",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Pending"
-          },
-          {
-            "name": "Accepted"
-          },
-          {
-            "name": "Retracted"
-          }
-        ]
-      }
-    },
-    {
-      "name": "DeadlineType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "None"
-          },
-          {
-            "name": "BidWindow"
-          },
-          {
-            "name": "Completion"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Escrow",
-      "docs": [
-        "Holds SOL lamports for a job. The PDA itself is the vault."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "job",
-            "docs": [
-              "Job this escrow belongs to"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "client",
-            "docs": [
-              "Client who funded the escrow"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "agent",
-            "docs": [
-              "Agent to be paid (set when bid is accepted)"
-            ],
-            "type": {
-              "option": "pubkey"
-            }
-          },
-          {
-            "name": "amount",
-            "docs": [
-              "Amount locked in lamports"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "released",
-            "docs": [
-              "Whether funds have been released"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "created_at",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Job",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "client",
-            "docs": [
-              "Client who posted the job"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "job_id",
-            "docs": [
-              "Monotonically-increasing ID scoped to this client"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "title",
-            "docs": [
-              "Short title (max 128 chars)"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "description",
-            "docs": [
-              "Full description (max 2048 chars)"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "metadata_uri",
-            "docs": [
-              "IPFS CID or link to structured specs / attachments"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "deadline",
-            "docs": [
-              "Unix deadline timestamp (0 = no deadline)"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "deadline_type",
-            "docs": [
-              "What the deadline means"
-            ],
-            "type": {
-              "defined": {
-                "name": "DeadlineType"
-              }
-            }
-          },
-          {
-            "name": "budget",
-            "docs": [
-              "Maximum budget the client escrowed (lamports)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "job_type",
-            "docs": [
-              "Fixed or Hourly"
-            ],
-            "type": {
-              "defined": {
-                "name": "JobType"
-              }
-            }
-          },
-          {
-            "name": "hourly_rate",
-            "docs": [
-              "Hourly rate in lamports (0 if Fixed)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "max_hours",
-            "docs": [
-              "Max hours for hourly jobs (0 if Fixed)"
-            ],
-            "type": "u32"
-          },
-          {
-            "name": "status",
-            "docs": [
-              "Lifecycle state"
-            ],
-            "type": {
-              "defined": {
-                "name": "JobStatus"
-              }
-            }
-          },
-          {
-            "name": "bump",
-            "docs": [
-              "PDA bump"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "created_at",
-            "docs": [
-              "Unix timestamp of creation"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "accepted_agent",
-            "docs": [
-              "Set when accept_bid fires"
-            ],
-            "type": {
-              "option": "pubkey"
-            }
-          },
-          {
-            "name": "accepted_bid",
-            "docs": [
-              "Set when accept_bid fires"
-            ],
-            "type": {
-              "option": "pubkey"
-            }
-          },
-          {
-            "name": "bid_count",
-            "docs": [
-              "Number of bids placed (for UI enumeration)"
-            ],
-            "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "JobCounter",
-      "docs": [
-        "Per-client monotonic counter to derive unique job PDAs without a global hotspot"
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "count",
-            "type": "u64"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "JobStatus",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Open"
-          },
-          {
-            "name": "InProgress"
-          },
-          {
-            "name": "WorkSubmitted"
-          },
-          {
-            "name": "Completed"
-          },
-          {
-            "name": "Cancelled"
-          }
-        ]
-      }
-    },
-    {
-      "name": "JobType",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Fixed"
-          },
-          {
-            "name": "Hourly"
-          }
-        ]
-      }
-    },
-    {
-      "name": "ServiceCounter",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "authority",
-            "type": "pubkey"
-          },
-          {
-            "name": "count",
-            "type": "u64"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "ServiceListing",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "agent",
-            "docs": [
-              "Agent who posted this service"
-            ],
-            "type": "pubkey"
-          },
-          {
-            "name": "listing_id",
-            "docs": [
-              "Monotonically-increasing ID scoped to this agent"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "title",
-            "docs": [
-              "Service title (max 128 chars)"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "description",
-            "docs": [
-              "Full description of the service (max 2048 chars)"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "metadata_uri",
-            "docs": [
-              "IPFS CID or link to structured specs"
-            ],
-            "type": "string"
-          },
-          {
-            "name": "skills",
-            "docs": [
-              "Skill tags relevant to this service"
-            ],
-            "type": {
-              "vec": "string"
-            }
-          },
-          {
-            "name": "hourly_rate",
-            "docs": [
-              "Hourly rate in lamports (0 = negotiable)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "min_budget",
-            "docs": [
-              "Minimum budget in lamports (0 = no minimum)"
-            ],
-            "type": "u64"
-          },
-          {
-            "name": "is_active",
-            "docs": [
-              "Whether the listing is currently active"
-            ],
-            "type": "bool"
-          },
-          {
-            "name": "bump",
-            "docs": [
-              "PDA bump"
-            ],
-            "type": "u8"
-          },
-          {
-            "name": "created_at",
-            "docs": [
-              "Unix timestamp of creation"
-            ],
-            "type": "i64"
-          }
-        ]
-      }
-    }
-  ]
+  "metadata": {
+    "address": "4m335ZpQpctjYKLp1bt4zU8QVYg8F5Dt7faPxsqZ1Uyf"
+  }
 }
