@@ -17,6 +17,16 @@ pub enum JobType {
     Hourly,
 }
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+pub enum DeadlineType {
+    /// No deadline set
+    None,
+    /// Bids accepted until this timestamp
+    BidWindow,
+    /// Work must be completed by this timestamp
+    Completion,
+}
+
 /// Per-client monotonic counter to derive unique job PDAs without a global hotspot
 #[account]
 pub struct JobCounter {
@@ -43,6 +53,8 @@ pub struct Job {
     pub metadata_uri: String,
     /// Unix deadline timestamp (0 = no deadline)
     pub deadline: i64,
+    /// What the deadline means
+    pub deadline_type: DeadlineType,
     /// Maximum budget the client escrowed (lamports)
     pub budget: u64,
     /// Fixed or Hourly
@@ -77,6 +89,7 @@ impl Job {
         + (4 + Self::MAX_DESC_LEN)      // description
         + (4 + Self::MAX_URI_LEN)       // metadata_uri
         + 8                             // deadline
+        + 1                             // deadline_type enum
         + 8                             // budget
         + 1                             // job_type enum
         + 8                             // hourly_rate

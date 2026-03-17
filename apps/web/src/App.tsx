@@ -101,7 +101,8 @@ export default function App() {
   const [jobTitle, setJobTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [jobUri, setJobUri] = useState("ipfs://job/spec");
-  const [deadline, setDeadline] = useState(Math.floor(Date.now() / 1000) + 3600);
+  const [deadlineDate, setDeadlineDate] = useState("");
+  const [deadlineType, setDeadlineType] = useState<"none" | "bidWindow" | "completion">("none");
   const [budget, setBudget] = useState(200000000);
   const [jobType, setJobType] = useState<"fixed" | "hourly">("fixed");
   const [hourlyRate, setHourlyRate] = useState(100000000);
@@ -603,13 +604,19 @@ export default function App() {
                     <div className="info-value">{enumKey(selectedJob.account.status)}</div>
                   </div>
                   <div className="info-block">
-                    <div className="info-label">Deadline</div>
+                    <div className="info-label">
+                      {enumKey(selectedJob.account.deadlineType || {}) === "bidWindow"
+                        ? "Bids Close"
+                        : enumKey(selectedJob.account.deadlineType || {}) === "completion"
+                          ? "Due Date"
+                          : "Deadline"}
+                    </div>
                     <div className="info-value">
                       {selectedJob.account.deadline.toString() === "0"
                         ? "None"
                         : new Date(
                             Number(selectedJob.account.deadline.toString()) * 1000,
-                          ).toLocaleDateString()}
+                          ).toLocaleString()}
                     </div>
                   </div>
                 </div>
@@ -889,13 +896,26 @@ export default function App() {
                   <input value={jobUri} onChange={(e) => setJobUri(e.target.value)} />
                 </label>
                 <label>
-                  Deadline (unix)
-                  <input
-                    type="number"
-                    value={deadline}
-                    onChange={(e) => setDeadline(Number(e.target.value))}
-                  />
+                  Deadline Type
+                  <select
+                    value={deadlineType}
+                    onChange={(e) => setDeadlineType(e.target.value as any)}
+                  >
+                    <option value="none">No Deadline</option>
+                    <option value="bidWindow">Bidding Window</option>
+                    <option value="completion">Completion Deadline</option>
+                  </select>
                 </label>
+                {deadlineType !== "none" && (
+                  <label>
+                    {deadlineType === "bidWindow" ? "Bids Close" : "Due Date"}
+                    <input
+                      type="datetime-local"
+                      value={deadlineDate}
+                      onChange={(e) => setDeadlineDate(e.target.value)}
+                    />
+                  </label>
+                )}
               </div>
               <div className="form-actions">
                 <button
@@ -917,13 +937,24 @@ export default function App() {
                         jobType === "hourly" ? hourlyRate * maxHours : budget;
                       const jobTypeArg =
                         jobType === "fixed" ? { fixed: {} } : { hourly: {} };
+                      const deadlineUnix =
+                        deadlineType === "none" || !deadlineDate
+                          ? 0
+                          : Math.floor(new Date(deadlineDate).getTime() / 1000);
+                      const deadlineTypeArg =
+                        deadlineType === "none"
+                          ? { none: {} }
+                          : deadlineType === "bidWindow"
+                            ? { bidWindow: {} }
+                            : { completion: {} };
 
                       const sig = await program!.methods
                         .createJob(
                           jobTitle,
                           jobDescription,
                           jobUri,
-                          new BN(deadline),
+                          new BN(deadlineUnix),
+                          deadlineTypeArg,
                           new BN(finalBudget),
                           jobTypeArg,
                           new BN(jobType === "hourly" ? hourlyRate : 0),

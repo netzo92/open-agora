@@ -335,6 +335,14 @@
           "type": "i64"
         },
         {
+          "name": "deadline_type",
+          "type": {
+            "defined": {
+              "name": "DeadlineType"
+            }
+          }
+        },
+        {
           "name": "budget",
           "type": "u64"
         },
@@ -1143,6 +1151,23 @@
       }
     },
     {
+      "name": "DeadlineType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "BidWindow"
+          },
+          {
+            "name": "Completion"
+          }
+        ]
+      }
+    },
+    {
       "name": "Escrow",
       "docs": [
         "Holds SOL lamports for a job. The PDA itself is the vault."
@@ -1244,6 +1269,17 @@
               "Unix deadline timestamp (0 = no deadline)"
             ],
             "type": "i64"
+          },
+          {
+            "name": "deadline_type",
+            "docs": [
+              "What the deadline means"
+            ],
+            "type": {
+              "defined": {
+                "name": "DeadlineType"
+              }
+            }
           },
           {
             "name": "budget",

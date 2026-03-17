@@ -67,6 +67,7 @@ pub mod open_agora {
         description: String,
         metadata_uri: String,
         deadline: i64,
+        deadline_type: DeadlineType,
         budget: u64,
         job_type: JobType,
         hourly_rate: u64,
@@ -89,7 +90,7 @@ pub mod open_agora {
         }
 
         let now = Clock::get()?.unix_timestamp;
-        if deadline != 0 {
+        if deadline_type != DeadlineType::None {
             require!(deadline > now, AgoraError::DeadlinePassed);
         }
 
@@ -103,6 +104,7 @@ pub mod open_agora {
         job.description = description;
         job.metadata_uri = metadata_uri;
         job.deadline = deadline;
+        job.deadline_type = deadline_type;
         job.budget = budget;
         job.job_type = job_type;
         job.hourly_rate = hourly_rate;
@@ -178,6 +180,11 @@ pub mod open_agora {
 
         let now = Clock::get()?.unix_timestamp;
 
+        // Enforce bid window deadline
+        if job.deadline_type == DeadlineType::BidWindow && job.deadline != 0 {
+            require!(now <= job.deadline, AgoraError::DeadlinePassed);
+        }
+
         let bid = &mut ctx.accounts.bid;
         bid.job = job.key();
         bid.agent = ctx.accounts.agent.key();
@@ -224,6 +231,12 @@ pub mod open_agora {
             job.accepted_agent == Some(ctx.accounts.agent.key()),
             AgoraError::Unauthorized
         );
+
+        // Enforce completion deadline
+        if job.deadline_type == DeadlineType::Completion && job.deadline != 0 {
+            let now = Clock::get()?.unix_timestamp;
+            require!(now <= job.deadline, AgoraError::DeadlinePassed);
+        }
 
         job.status = JobStatus::WorkSubmitted;
         Ok(())
